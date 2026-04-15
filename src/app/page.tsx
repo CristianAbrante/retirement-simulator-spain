@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FileUploader from "@/components/FileUploader";
 import ResultsDisplay from "@/components/ResultsDisplay";
 import WorkHistoryTable from "@/components/WorkHistoryTable";
 import { parseVidaLaboral } from "@/lib/pdf-parser";
 import { calculateRetirement } from "@/lib/retirement-calculator";
+import { saveVidaLaboral, loadVidaLaboral, clearVidaLaboral } from "@/lib/storage";
 import type { VidaLaboral, RetirementResult } from "@/lib/types";
 
 export default function Home() {
@@ -15,6 +16,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const cached = loadVidaLaboral();
+    if (cached) {
+      setVidaLaboral(cached);
+      setRetirementResult(calculateRetirement(cached));
+    }
+  }, []);
+
   const handleFileSelected = async (file: File) => {
     setIsLoading(true);
     setError(null);
@@ -23,6 +32,7 @@ export default function Home() {
 
     try {
       const parsedData = await parseVidaLaboral(file);
+      saveVidaLaboral(parsedData);
       setVidaLaboral(parsedData);
 
       const result = calculateRetirement(parsedData);
@@ -40,6 +50,7 @@ export default function Home() {
   };
 
   const handleReset = () => {
+    clearVidaLaboral();
     setVidaLaboral(null);
     setRetirementResult(null);
     setError(null);
